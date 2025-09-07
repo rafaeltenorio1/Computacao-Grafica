@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computação Gráfica - Painel de Algoritmos</title>
+    <!-- Incluindo o Tailwind CSS para estilização rápida e moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilo para um scrollbar mais suave no painel de controle */
+        #control-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        #control-panel::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        #control-panel::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        #control-panel::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Remove as setas dos inputs numéricos (Webkit) */
+        input[type='number']::-webkit-inner-spin-button,
+        input[type='number']::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type='number'] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans flex flex-col h-screen">
+
+    <!-- Cabeçalho da Aplicação -->
+    <header class="bg-white shadow-md p-4 z-10">
+        <h1 class="text-2xl font-bold text-gray-800">Painel de Algoritmos de Computação Gráfica</h1>
+    </header>
+
+    <!-- Corpo Principal -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+
+        <!-- Painel de Controle (Esquerda) -->
+        <aside id="control-panel" class="w-full md:w-96 bg-white p-6 overflow-y-auto border-r border-gray-200">
+            <div class="space-y-6">
+                <!-- Seletor de Algoritmo -->
+                <div>
+                    <label for="algorithm-select" class="block text-sm font-medium text-gray-700 mb-2">1. Selecione o Algoritmo:</label>
+                    <select id="algorithm-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="bresenham">Reta (Bresenham)</option>
+                        <option value="circulo">Círculo</option>
+                        <option value="curva">Curva (Bézier)</option>
+                        <option value="polilinha">Polilinha / Polígono</option>
+                        <option value="preenchimento_recursivo">Preenchimento Recursivo</option>
+                        <option value="preenchimento_varredura">Preenchimento por Varredura</option>
+                        <option value="recorte_linha">Recorte de Linha (Cohen-Sutherland)</option>
+                        <option value="recorte_poligono">Recorte de Polígono (Sutherland-Hodgman)</option>
+                        <option value="transformacoes">Transformações 2D</option>
+                        <option value="projecao_ortogonal">Projeção Ortogonal</option>
+                        <option value="projecao_perspectiva">Projeção em Perspectiva</option>
+                    </select>
+                </div>
+
+                <!-- Divisor -->
+                <hr/>
+
+                <!-- Área de Parâmetros Dinâmicos -->
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">2. Defina os Parâmetros:</h3>
+                    <div id="parameters-area" class="space-y-4 p-4 bg-gray-50 rounded-md border">
+                        <!-- O conteúdo aqui será inserido dinamicamente via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="flex space-x-4">
+                    <button id="draw-button" class="flex-1 bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors duration-200">
+                        Desenhar
+                    </button>
+                    <button id="clear-button" class="flex-1 bg-gray-600 text-white font-bold py-2 px-4 rounded-md hover:bg-gray-700 transition-colors duration-200">
+                        Limpar Tela
+                    </button>
+                </div>
+
+                 <!-- Área de Status / Coordenadas -->
+                <div id="status-area" class="text-sm text-gray-500 pt-4 text-center">
+                    Passe o mouse sobre o canvas para ver as coordenadas.
+                </div>
+            </div>
+        </aside>
+
+        <!-- Canvas de Desenho (Direita) -->
+        <div class="flex-1 bg-gray-200 p-4 flex justify-center items-center overflow-hidden">
+            <canvas id="main-canvas" class="bg-white shadow-lg rounded-md cursor-crosshair"></canvas>
+        </div>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('main-canvas');
+            const ctx = canvas.getContext('2d');
+            const algorithmSelect = document.getElementById('algorithm-select');
+            const parametersArea = document.getElementById('parameters-area');
+            const drawButton = document.getElementById('draw-button');
+            const clearButton = document.getElementById('clear-button');
+            const statusArea = document.getElementById('status-area');
+            
+            const GRID_SIZE = 20;
+
+            // Função para ajustar o tamanho do canvas e desenhar a grade
+            function setupCanvas() {
+                const container = canvas.parentElement;
+                const containerSize = Math.min(container.clientWidth - 32, container.clientHeight - 32); // 32 = padding
+                canvas.width = containerSize;
+                canvas.height = containerSize;
+                drawGrid();
+            }
+
+            // Função para desenhar a grade de fundo
+            function drawGrid() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Fundo branco
+                ctx.fillStyle = '#ffffff'; 
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Linhas da grade
+                ctx.strokeStyle = '#000000'; // Cor preta
+                ctx.lineWidth = 1;
+
+                // Linhas verticais
+                for (let x = 0; x <= canvas.width; x += GRID_SIZE) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+
+                // Linhas horizontais
+                for (let y = 0; y <= canvas.height; y += GRID_SIZE) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+            }
+
+            // Função para preencher o quadrado da grade onde o mouse foi clicado
+            function fillGridSquare(x, y, color = '#dc2626') { // Cor vermelha para destaque
+                // Calcula o canto superior esquerdo do quadrado da grade
+                const gridX = Math.floor(x / GRID_SIZE) * GRID_SIZE;
+                const gridY = Math.floor(y / GRID_SIZE) * GRID_SIZE;
+
+                ctx.fillStyle = color;
+                // Preenche o quadrado, mas deixa a borda da grade visível
+                ctx.fillRect(gridX + 1, gridY + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+            }
+            
+            // Mapeia os algoritmos para o HTML de seus parâmetros
+            const parametersHTML = {
+                bresenham: `
+                    <p class="text-xs text-gray-500">Clique em 2 pontos no canvas ou insira as coordenadas.</p>
+                    <div>
+                        <label class="block text-xs font-medium">Ponto Inicial (X1, Y1)</label>
+                        <div class="flex space-x-2 mt-1">
+                            <input type="number" id="x1" placeholder="X1" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="y1" placeholder="Y1" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium">Ponto Final (X2, Y2)</label>
+                        <div class="flex space-x-2 mt-1">
+                            <input type="number" id="x2" placeholder="X2" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="y2" placeholder="Y2" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        </div>
+                    </div>
+                `,
+                circulo: `
+                    <p class="text-xs text-gray-500">Clique no centro e insira o raio.</p>
+                    <div>
+                        <label class="block text-xs font-medium">Centro (Xc, Yc)</label>
+                        <div class="flex space-x-2 mt-1">
+                            <input type="number" id="xc" placeholder="Xc" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="yc" placeholder="Yc" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium">Raio (R)</label>
+                        <input type="number" id="raio" placeholder="Raio" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                    </div>
+                `,
+                 curva: `
+                    <p class="text-xs text-gray-500">Defina 4 pontos de controle para a Curva de Bézier.</p>
+                    ${[1,2,3,4].map(i => `
+                    <div>
+                        <label class="block text-xs font-medium">Ponto ${i} (P${i})</label>
+                        <div class="flex space-x-2 mt-1">
+                            <input type="number" id="p${i}x" placeholder="X${i}" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="p${i}y" placeholder="Y${i}" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        </div>
+                    </div>
+                    `).join('')}
+                `,
+                polilinha: `
+                    <p class="text-xs text-gray-500">Adicione os vértices do polígono. Os algoritmos de preenchimento e recorte usarão este polígono.</p>
+                    <div id="vertex-list" class="text-xs bg-white p-2 rounded border max-h-24 overflow-y-auto">Nenhum vértice adicionado.</div>
+                     <p class="text-xs text-gray-500 mt-2">Clique no canvas para adicionar vértices.</p>
+                `,
+                preenchimento_recursivo: `
+                    <p class="text-xs text-gray-500">Use o polígono definido em "Polilinha". Clique em um ponto inicial dentro dele.</p>
+                    <div>
+                        <label class="block text-xs font-medium">Ponto Inicial (X, Y)</label>
+                        <div class="flex space-x-2 mt-1">
+                            <input type="number" id="startX" placeholder="X" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="startY" placeholder="Y" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        </div>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium">Cor de Preenchimento</label>
+                        <input type="color" id="fillColor" value="#3b82f6" class="w-full mt-1 rounded-md"/>
+                    </div>
+                `,
+                preenchimento_varredura: `
+                     <p class="text-xs text-gray-500">Use o polígono definido em "Polilinha" para preencher.</p>
+                     <div>
+                        <label class="block text-xs font-medium">Cor de Preenchimento</label>
+                        <input type="color" id="scanlineColor" value="#10b981" class="w-full mt-1 rounded-md"/>
+                    </div>
+                `,
+                recorte_linha: `
+                    <p class="text-xs text-gray-500">Defina a janela de recorte e a linha.</p>
+                     <div>
+                        <label class="block text-xs font-medium">Janela (Xmin, Ymin) e (Xmax, Ymax)</label>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <input type="number" id="xmin" placeholder="Xmin" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="ymin" placeholder="Ymin" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="xmax" placeholder="Xmax" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="ymax" placeholder="Ymax" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium">Linha a ser recortada</label>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <input type="number" id="lx1" placeholder="X1" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="ly1" placeholder="Y1" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="lx2" placeholder="X2" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="ly2" placeholder="Y2" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        </div>
+                    </div>
+                `,
+                recorte_poligono: `
+                    <p class="text-xs text-gray-500">Define uma janela e recorta o polígono definido em "Polilinha".</p>
+                    <div>
+                        <label class="block text-xs font-medium">Janela de Recorte</label>
+                         <div class="grid grid-cols-2 gap-2 mt-1">
+                            <input type="number" id="cxmin" placeholder="Xmin" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="cymin" placeholder="Ymin" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="cxmax" placeholder="Xmax" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="cymax" placeholder="Ymax" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        </div>
+                    </div>
+                `,
+                transformacoes: `
+                    <p class="text-xs text-gray-500">Aplica transformações no polígono de "Polilinha".</p>
+                     <div>
+                        <label class="block text-xs font-medium">Tipo</label>
+                        <select id="transform-type" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2">
+                            <option value="translacao">Translação</option>
+                            <option value="rotacao">Rotação</option>
+                            <option value="escala">Escala</option>
+                        </select>
+                    </div>
+                    <div id="transform-params"></div>
+                `,
+                projecao_ortogonal: `
+                    <p class="text-xs text-gray-500">Projeta um objeto 3D pré-definido no plano 2D.</p>
+                     <div>
+                        <label class="block text-xs font-medium">Objeto 3D</label>
+                        <select id="object-3d" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2">
+                            <option value="cubo">Cubo</option>
+                            <option value="piramide">Pirâmide</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium mt-2">Rotação X: <span id="rotX-val">0</span>°</label>
+                        <input type="range" id="rotX" min="-180" max="180" value="0" class="w-full"/>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium">Rotação Y: <span id="rotY-val">0</span>°</label>
+                        <input type="range" id="rotY" min="-180" max="180" value="0" class="w-full"/>
+                    </div>
+                `,
+                projecao_perspectiva: `
+                    <p class="text-xs text-gray-500">Projeta um objeto 3D com perspectiva.</p>
+                     <div>
+                        <label class="block text-xs font-medium">Objeto 3D</label>
+                        <select id="object-3d-persp" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2">
+                            <option value="cubo">Cubo</option>
+                            <option value="piramide">Pirâmide</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium mt-2">Distância da Câmera: <span id="dist-val">5</span></label>
+                        <input type="range" id="dist" min="1" max="20" value="5" class="w-full"/>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium">Rotação X: <span id="rotX-persp-val">0</span>°</label>
+                        <input type="range" id="rotX-persp" min="-180" max="180" value="0" class="w-full"/>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium">Rotação Y: <span id="rotY-persp-val">0</span>°</label>
+                        <input type="range" id="rotY-persp" min="-180" max="180" value="0" class="w-full"/>
+                    </div>
+                `,
+            };
+            
+            // HTML para parâmetros de transformações
+            const transformParamsHTML = {
+                translacao: `
+                    <label class="block text-xs font-medium mt-2">Fatores (Tx, Ty)</label>
+                    <div class="flex space-x-2 mt-1">
+                        <input type="number" id="tx" placeholder="Tx" value="10" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        <input type="number" id="ty" placeholder="Ty" value="10" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                    </div>
+                `,
+                rotacao: `
+                    <label class="block text-xs font-medium mt-2">Ângulo (°)</label>
+                    <input type="number" id="angle" placeholder="Ângulo" value="45" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                `,
+                escala: `
+                    <label class="block text-xs font-medium mt-2">Fatores (Sx, Sy)</label>
+                    <div class="flex space-x-2 mt-1">
+                        <input type="number" step="0.1" id="sx" placeholder="Sx" value="1.5" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        <input type="number" step="0.1" id="sy" placeholder="Sy" value="1.5" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                    </div>
+                `
+            };
+            
+            function updateParametersUI() {
+                const selectedAlgorithm = algorithmSelect.value;
+                parametersArea.innerHTML = parametersHTML[selectedAlgorithm];
+                
+                // Lógica especial para o painel de transformações
+                if(selectedAlgorithm === 'transformacoes') {
+                    const transformTypeSelect = document.getElementById('transform-type');
+                    const transformParamsDiv = document.getElementById('transform-params');
+                    
+                    function updateTransformParams() {
+                        transformParamsDiv.innerHTML = transformParamsHTML[transformTypeSelect.value];
+                    }
+                    
+                    transformTypeSelect.addEventListener('change', updateTransformParams);
+                    updateTransformParams(); // Chama uma vez para inicializar
+                }
+
+                // Lógica para atualizar os valores dos sliders de projeção
+                if(selectedAlgorithm.startsWith('projecao')) {
+                    document.querySelectorAll('input[type="range"]').forEach(slider => {
+                        const valueSpan = document.getElementById(`${slider.id}-val`);
+                        if(valueSpan) {
+                            valueSpan.textContent = slider.value;
+                            slider.addEventListener('input', () => {
+                                valueSpan.textContent = slider.value;
+                            });
+                        }
+                    });
+                }
+            }
+
+            // Função para lidar com cliques no canvas
+            let clickCount = 0;
+            let polygonVertices = [];
+
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.round(e.clientX - rect.left);
+                const y = Math.round(e.clientY - rect.top);
+                
+                // Preenche o quadrado da grade no ponto clicado
+                fillGridSquare(x, y);
+                
+                const selectedAlgorithm = algorithmSelect.value;
+
+                switch(selectedAlgorithm) {
+                    case 'bresenham':
+                        if (clickCount === 0) {
+                            document.getElementById('x1').value = x;
+                            document.getElementById('y1').value = y;
+                            clickCount++;
+                        } else {
+                            document.getElementById('x2').value = x;
+                            document.getElementById('y2').value = y;
+                            clickCount = 0;
+                        }
+                        break;
+                    case 'circulo':
+                        document.getElementById('xc').value = x;
+                        document.getElementById('yc').value = y;
+                        break;
+                    case 'polilinha':
+                        polygonVertices.push({x, y});
+                        const vertexList = document.getElementById('vertex-list');
+                        if(polygonVertices.length === 1) vertexList.innerHTML = '';
+                        vertexList.innerHTML += `<div class="p-1">Vértice ${polygonVertices.length}: (${x}, ${y})</div>`;
+                        break;
+                    case 'preenchimento_recursivo':
+                        document.getElementById('startX').value = x;
+                        document.getElementById('startY').value = y;
+                        break;
+                }
+            });
+            
+            // Função para mostrar coordenadas no mouse move
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = Math.round(e.clientX - rect.left);
+                const y = Math.round(e.clientY - rect.top);
+                statusArea.textContent = `Coordenadas: (X: ${x}, Y: ${y})`;
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                statusArea.textContent = 'Passe o mouse sobre o canvas para ver as coordenadas.';
+            });
+
+            // --- INÍCIO DA IMPLEMENTAÇÃO DOS ALGORITMOS ---
+
+            // Algoritmo de Bresenham para desenhar uma linha
+            function drawBresenhamLine(x1, y1, x2, y2) {
+                // Converte coordenadas do canvas para coordenadas da grade
+                let gridX1 = Math.floor(x1 / GRID_SIZE);
+                let gridY1 = Math.floor(y1 / GRID_SIZE);
+                let gridX2 = Math.floor(x2 / GRID_SIZE);
+                let gridY2 = Math.floor(y2 / GRID_SIZE);
+
+                let dx = Math.abs(gridX2 - gridX1);
+                let dy = -Math.abs(gridY2 - gridY1);
+
+                let sx = gridX1 < gridX2 ? 1 : -1;
+                let sy = gridY1 < gridY2 ? 1 : -1;
+
+                let err = dx + dy;
+                let e2;
+
+                while (true) {
+                    // Pinta o quadrado atual da grade
+                    // Multiplica por GRID_SIZE para voltar para as coordenadas do canvas
+                    fillGridSquare(gridX1 * GRID_SIZE, gridY1 * GRID_SIZE, '#dc2626'); // Cor vermelha para a linha
+
+                    if (gridX1 === gridX2 && gridY1 === gridY2) break;
+
+                    e2 = 2 * err;
+                    if (e2 >= dy) {
+                        err += dy;
+                        gridX1 += sx;
+                    }
+                    if (e2 <= dx) {
+                        err += dx;
+                        gridY1 += sy;
+                    }
+                }
+            }
+
+            // --- FIM DA IMPLEMENTAÇÃO DOS ALGORITMOS ---
+
+
+            // Função de Desenho (agora com a lógica de Bresenham)
+            drawButton.addEventListener('click', () => {
+                const algorithm = algorithmSelect.value;
+                
+                switch(algorithm) {
+                    case 'bresenham':
+                        const x1 = parseInt(document.getElementById('x1').value);
+                        const y1 = parseInt(document.getElementById('y1').value);
+                        const x2 = parseInt(document.getElementById('x2').value);
+                        const y2 = parseInt(document.getElementById('y2').value);
+
+                        if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2)) {
+                            drawBresenhamLine(x1, y1, x2, y2);
+                        } else {
+                            alert("Por favor, defina um ponto inicial e final para a reta.");
+                        }
+                        break;
+                    default:
+                        console.log(`Botão 'Desenhar' clicado para o algoritmo: ${algorithm}`);
+                        alert(`O algoritmo "${algorithm}" seria executado agora. A lógica de desenho ainda precisa ser implementada.`);
+                        break;
+                }
+            });
+
+            // Limpar Tela
+            clearButton.addEventListener('click', () => {
+                setupCanvas(); // Redesenha a grade, limpando tudo
+                polygonVertices = []; // Limpa os vértices do polígono
+                 if(document.getElementById('vertex-list')){
+                    document.getElementById('vertex-list').innerHTML = 'Nenhum vértice adicionado.';
+                }
+                console.log("Tela limpa.");
+            });
+
+            // Event listener para mudança de algoritmo
+            algorithmSelect.addEventListener('change', () => {
+                updateParametersUI();
+                clickCount = 0; // Reseta a contagem de cliques
+            });
+
+            // Inicialização
+            window.addEventListener('resize', setupCanvas);
+            setupCanvas();
+            updateParametersUI(); // Carrega os parâmetros do primeiro algoritmo da lista
+        });
+    </script>
+</body>
+</html>
