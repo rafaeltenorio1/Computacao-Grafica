@@ -15,8 +15,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const COR_PREENCHIMENTO = 'cyan';
     const COR_CLICK = 'black';
 
-    let grid_color = [];
+    //COFIGURAÇÂO CUBO PADRÃO
+    const TAMANHO_CUBO = 16;
+    const s = TAMANHO_CUBO / 2;
 
+    const vertices = [
+        { x: -s, y: -s, z: -s }, // 0
+        { x: s, y: -s, z: -s }, // 1
+        { x: s, y: s, z: -s }, // 2
+        { x: -s, y: s, z: -s }, // 3
+        { x: -s, y: -s, z: s }, // 4
+        { x: s, y: -s, z: s }, // 5
+        { x: s, y: s, z: s }, // 6
+        { x: -s, y: s, z: s }  // 7
+    ];
+
+    const edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0], // Face traseira
+        [4, 5], [5, 6], [6, 7], [7, 4], // Face frontal
+        [0, 4], [1, 5], [2, 6], [3, 7]  // Arestas de conexão
+    ];
+
+    function rotateY(point, angle) {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const x = point.x * cos - point.z * sin;
+        const z = point.x * sin + point.z * cos;
+        return { x: x, y: point.y, z: z };
+    }
+
+    function rotateX(point, angle) {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const y = point.y * cos - point.z * sin;
+        const z = point.y * sin + point.z * cos;
+        return { x: point.x, y: y, z: z };
+    }
+
+    let grid_color = [];
     for (let i = 0; i < ALTURA_GRID; i++) {
         let linha = [];
         for (let j = 0; j < LARGURA_GRID; j++) {
@@ -216,13 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 `,
         projecao_ortogonal: `
                     <p class="text-xs text-gray-500">Projeta um objeto 3D pré-definido no plano 2D.</p>
-                     <div>
-                        <label class="block text-xs font-medium">Objeto 3D</label>
-                        <select id="object-3d" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2">
-                            <option value="cubo">Cubo</option>
-                            <option value="piramide">Pirâmide</option>
-                        </select>
-                    </div>
+                     <textarea id="vertex" name="vertex" rows="5" cols="33" placeholder="Lista de vértices..."></textarea>
+                     <textarea id="faces" name="egdes" rows="5" cols="33" placeholder="Lista de faces..."></textarea>
+
                      <div>
                         <label class="block text-xs font-medium mt-2">Rotação X: <span id="rotX-val">0</span>°</label>
                         <input type="range" id="rotX" min="-180" max="180" value="0" class="w-full"/>
@@ -243,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                      <div>
                         <label class="block text-xs font-medium mt-2">Distância da Câmera: <span id="dist-val">5</span></label>
-                        <input type="range" id="dist" min="1" max="20" value="5" class="w-full"/>
+                        <input type="range" id="dist" min="20" max="40" value="5" class="w-full"/>
                     </div>
                      <div>
                         <label class="block text-xs font-medium">Rotação X: <span id="rotX-persp-val">0</span>°</label>
@@ -709,6 +741,77 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    //Algoritmo de projeção ortogonal
+    function projectOthogonal(point) {
+        // Simplesmente descarta a coordenada Z
+        return { x: point.x, y: point.y };
+    }
+
+    function renderCubeOthogonal(angleX, angleY) {
+        const radX = angleX * Math.PI / 180;
+        const radY = angleY * Math.PI / 180;
+
+        const projectedPoints = [];
+
+        // 1. Para cada vértice: rotaciona, projeta e translada para o centro do canvas
+        for (const vertex of vertices) {
+            let rotated = rotateY(vertex, radY);
+            rotated = rotateX(rotated, radX);
+
+            const projected = projectOthogonal(rotated);
+
+            // Translada o ponto para o centro do canvas
+            const screenX = Math.floor(projected.x + LARGURA_GRID / 2);
+            const screenY = Math.floor(projected.y + ALTURA_GRID / 2);
+
+            projectedPoints.push({ x: screenX, y: screenY });
+        }
+
+        // 2. Para cada aresta: desenha uma linha entre seus vértices projetados
+        for (const edge of edges) {
+            const p1 = projectedPoints[edge[0]];
+            const p2 = projectedPoints[edge[1]];
+            bresenham(p1.x, p1.y, p2.x, p2.y);
+        }
+    }
+
+    //Algoritmo de projeção perspectiva
+    function projectPerspective(point, viewerDistance) {
+        // Fator de escala baseado na distância e na profundidade Z
+        const factor = viewerDistance / (viewerDistance + point.z);
+
+        return {
+            x: point.x * factor,
+            y: point.y * factor
+        };
+    }
+
+    function renderCubePerspective(angleX, angleY, viewerDistance = 30) {
+        const radX = angleX * Math.PI / 180;
+        const radY = angleY * Math.PI / 180;        
+
+        const projectedPoints = [];
+
+        for (const vertex of vertices) {
+            let rotated = rotateY(vertex, radY);
+            rotated = rotateX(rotated, radX);
+
+            // Chamando a nova função de projeção
+            const projected = projectPerspective(rotated, viewerDistance);
+
+            const screenX = Math.floor(projected.x + LARGURA_GRID / 2);
+            const screenY = Math.floor(projected.y + ALTURA_GRID / 2);
+
+            projectedPoints.push({ x: screenX, y: screenY });
+        }
+
+        for (const edge of edges) {
+            const p1 = projectedPoints[edge[0]];
+            const p2 = projectedPoints[edge[1]];
+            bresenham(p1.x, p1.y, p2.x, p2.y);
+        }
+    }
+
     // --- FIM DA IMPLEMENTAÇÃO DOS ALGORITMOS ---
 
 
@@ -816,6 +919,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const scanlineColor = document.getElementById('scanlineColor').value;
                 scanLineFill(polygonVertices, scanlineColor);
                 drawPoly(polygonVertices, true);
+                break;
+            case 'projecao_ortogonal':
+                const rotX = parseInt(document.getElementById('rotX').value);
+                const rotY = parseInt(document.getElementById('rotY').value);
+
+                setupCanvas();
+                renderCubeOthogonal(rotX, rotY);
+                break;
+
+            case 'projecao_perspectiva':
+                const rotXpersp = parseInt(document.getElementById('rotX-persp').value);
+                const rotYpersp = parseInt(document.getElementById('rotY-persp').value);
+                const dist = parseInt(document.getElementById('dist').value);
+
+                setupCanvas();
+                renderCubePerspective(rotXpersp, rotYpersp, dist);
                 break;
             default:
                 console.log(`Botão 'Desenhar' clicado para o algoritmo: ${algorithm}`);
