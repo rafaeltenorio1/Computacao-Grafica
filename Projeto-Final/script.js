@@ -15,27 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const COR_PREENCHIMENTO = 'cyan';
     const COR_CLICK = 'black';
 
-    //COFIGURAÇÂO CUBO PADRÃO
-    const TAMANHO_CUBO = 16;
-    const s = TAMANHO_CUBO / 2;
-
-    const vertices = [
-        { x: -s, y: -s, z: -s }, // 0
-        { x: s, y: -s, z: -s }, // 1
-        { x: s, y: s, z: -s }, // 2
-        { x: -s, y: s, z: -s }, // 3
-        { x: -s, y: -s, z: s }, // 4
-        { x: s, y: -s, z: s }, // 5
-        { x: s, y: s, z: s }, // 6
-        { x: -s, y: s, z: s }  // 7
-    ];
-
-    const edges = [
-        [0, 1], [1, 2], [2, 3], [3, 0], // Face traseira
-        [4, 5], [5, 6], [6, 7], [7, 4], // Face frontal
-        [0, 4], [1, 5], [2, 6], [3, 7]  // Arestas de conexão
-    ];
-
     function rotateY(point, angle) {
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
@@ -251,11 +230,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div id="transform-params"></div>
                 `,
         projecao_ortogonal: `
-                    <p class="text-xs text-gray-500">Projeta um objeto 3D pré-definido no plano 2D.</p>
-                     <textarea id="vertex" name="vertex" rows="5" cols="33" placeholder="Lista de vértices..."></textarea>
-                     <textarea id="faces" name="egdes" rows="5" cols="33" placeholder="Lista de arestas..."></textarea>
+                    <p class="text-xs text-gray-500">Projeta um objeto 3D.</p>
+                    <p class="text-xs text-gray-500">Lista de vétices:</p>
+                    <textarea id="vertex" name="vertex-orto" rows="5" cols="33" placeholder="Lista de vértices...">[{ "x": -8, "y": -8, "z": -8 }, { "x": 8, "y": -8, "z": -8 }, { "x": 8, "y": 8, "z": -8 }, { "x": -8, "y": 8, "z": -8 }, { "x": -8, "y": -8, "z": 8 }, { "x": 8, "y": -8, "z": 8 }, { "x": 8, "y": 8, "z": 8 }, { "x": -8, "y": 8, "z": 8 }]</textarea>
+                    <p class="text-xs text-gray-500">Lista de arestas:</p>
+                    <textarea id="egde" name="egde-orto" rows="5" cols="33" placeholder="Lista de arestas...">[[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]</textarea>
 
-                     <div>
+                    <div>
                         <label class="block text-xs font-medium mt-2">Rotação X: <span id="rotX-val">0</span>°</label>
                         <input type="range" id="rotX" min="-180" max="180" value="0" class="w-full"/>
                     </div>
@@ -265,14 +246,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `,
         projecao_perspectiva: `
-                    <p class="text-xs text-gray-500">Projeta um objeto 3D com perspectiva.</p>
-                     <div>
-                        <label class="block text-xs font-medium">Objeto 3D</label>
-                        <select id="object-3d-persp" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2">
-                            <option value="cubo">Cubo</option>
-                            <option value="piramide">Pirâmide</option>
-                        </select>
-                    </div>
+                    <p class="text-xs text-gray-500">Projeta um objeto 3D.</p>
+                    <p class="text-xs text-gray-500">Lista de vétices:</p>
+                    <textarea id="vertex" name="vertex-persp" rows="5" cols="33" placeholder="Lista de vértices...">[{ "x": -8, "y": -8, "z": -8 }, { "x": 8, "y": -8, "z": -8 }, { "x": 8, "y": 8, "z": -8 }, { "x": -8, "y": 8, "z": -8 }, { "x": -8, "y": -8, "z": 8 }, { "x": 8, "y": -8, "z": 8 }, { "x": 8, "y": 8, "z": 8 }, { "x": -8, "y": 8, "z": 8 }]</textarea>
+                    <p class="text-xs text-gray-500">Lista de arestas:</p>
+                    <textarea id="egde" name="egde-persp" rows="5" cols="33" placeholder="Lista de arestas...">[[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]</textarea>
+
                      <div>
                         <label class="block text-xs font-medium mt-2">Distância da Câmera: <span id="dist-val">5</span></label>
                         <input type="range" id="dist" min="20" max="40" value="5" class="w-full"/>
@@ -287,14 +266,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `,
         projecao_cavalier: `
-                    <p class="text-xs text-gray-500">Projeta um objeto 3D com perspectiva.</p>
-                     <div>
-                        <label class="block text-xs font-medium">Objeto 3D</label>
-                        <select id="object-3d-persp" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2">
-                            <option value="cubo">Cubo</option>
-                            <option value="piramide">Pirâmide</option>
-                        </select>
-                    </div>
+                    <p class="text-xs text-gray-500">Projeta um objeto 3D.</p>
+                    <p class="text-xs text-gray-500">Lista de vétices:</p>
+                    <textarea id="vertex" name="vertex-cava" rows="5" cols="33" placeholder="Lista de vértices...">[{ "x": -8, "y": -8, "z": -8 }, { "x": 8, "y": -8, "z": -8 }, { "x": 8, "y": 8, "z": -8 }, { "x": -8, "y": 8, "z": -8 }, { "x": -8, "y": -8, "z": 8 }, { "x": 8, "y": -8, "z": 8 }, { "x": 8, "y": 8, "z": 8 }, { "x": -8, "y": 8, "z": 8 }]</textarea>
+                    <p class="text-xs text-gray-500">Lista de arestas:</p>
+                    <textarea id="egde" name="egde-cava" rows="5" cols="33" placeholder="Lista de arestas...">[[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]</textarea>
+
                      <div>
                         <label class="block text-xs font-medium mt-2">Ângulo de Projeção: <span id="angle-cava-val"></span></label>
                         <input type="range" id="angle-cava" min="30" max="45" value="30" class="w-full"/>
@@ -309,14 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `,
         projecao_cabinet: `
-                    <p class="text-xs text-gray-500">Projeta um objeto 3D com perspectiva.</p>
-                     <div>
-                        <label class="block text-xs font-medium">Objeto 3D</label>
-                        <select id="object-3d-persp" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2">
-                            <option value="cubo">Cubo</option>
-                            <option value="piramide">Pirâmide</option>
-                        </select>
-                    </div>
+                    <p class="text-xs text-gray-500">Projeta um objeto 3D.</p>
+                    <p class="text-xs text-gray-500">Lista de vétices:</p>
+                    <textarea id="vertex" name="vertex-cabi" rows="5" cols="33" placeholder="Lista de vértices...">[{ "x": -8, "y": -8, "z": -8 }, { "x": 8, "y": -8, "z": -8 }, { "x": 8, "y": 8, "z": -8 }, { "x": -8, "y": 8, "z": -8 }, { "x": -8, "y": -8, "z": 8 }, { "x": 8, "y": -8, "z": 8 }, { "x": 8, "y": 8, "z": 8 }, { "x": -8, "y": 8, "z": 8 }]</textarea>
+                    <p class="text-xs text-gray-500">Lista de arestas:</p>
+                    <textarea id="egde" name="egde-cabi" rows="5" cols="33" placeholder="Lista de arestas...">[[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]</textarea>
+
                      <div>
                         <label class="block text-xs font-medium mt-2">Ângulo de Projeção: <span id="angle-cabi-val"></span></label>
                         <input type="range" id="angle-cabi" min="30" max="45" value="30" class="w-full"/>
@@ -791,11 +766,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return { x: point.x, y: point.y };
     }
 
-    function renderCubeOthogonal(angleX, angleY) {
+    function renderCubeOthogonal(angleX, angleY, vertices, edges) {
         const radX = angleX * Math.PI / 180;
         const radY = angleY * Math.PI / 180;
 
-        const projectedPoints = [];
+        let projectedPoints = [];
 
         // 1. Para cada vértice: rotaciona, projeta e translada para o centro do canvas
         for (const vertex of vertices) {
@@ -830,7 +805,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function renderCubePerspective(angleX, angleY, viewerDistance = 30) {
+    function renderCubePerspective(angleX, angleY, viewerDistance = 30, vertices, edges) {
         const radX = angleX * Math.PI / 180;
         const radY = angleY * Math.PI / 180;
 
@@ -869,7 +844,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function renderCubeCavalier(angleX, angleY, angleDeg = 45) {
+    function renderCubeCavalier(angleX, angleY, angleDeg = 45, vertices, edges) {
         const radX = angleX * Math.PI / 180;
         const radY = angleY * Math.PI / 180;
 
@@ -908,7 +883,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function renderCubeCabinet(angleX, angleY, angleDeg = 45) {
+    function renderCubeCabinet(angleX, angleY, angleDeg = 45, vertices, edges) {
         const radX = angleX * Math.PI / 180;
         const radY = angleY * Math.PI / 180;
 
@@ -1045,8 +1020,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rotX = parseInt(document.getElementById('rotX').value);
                 const rotY = parseInt(document.getElementById('rotY').value);
 
+                const vertexOrto = eval(document.getElementById('vertex').value);
+                const edgeOrto = eval(document.getElementById('egde').value);
+
                 setupCanvas();
-                renderCubeOthogonal(rotX, rotY);
+                renderCubeOthogonal(rotX, rotY, vertexOrto, edgeOrto);
                 break;
 
             case 'projecao_perspectiva':
@@ -1054,24 +1032,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rotYpersp = parseInt(document.getElementById('rotY-persp').value);
                 const dist = parseInt(document.getElementById('dist').value);
 
+                const vertexPersp = eval(document.getElementById('vertex').value);
+                const edgePersp = eval(document.getElementById('egde').value);
+
                 setupCanvas();
-                renderCubePerspective(rotXpersp, rotYpersp, dist);
+                renderCubePerspective(rotXpersp, rotYpersp, dist, vertexPersp, edgePersp);
                 break;
             case 'projecao_cavalier':
                 const rotXcava = parseInt(document.getElementById('rotX-cava').value);
                 const rotYcava = parseInt(document.getElementById('rotY-cava').value);
                 const angleCava = parseInt(document.getElementById('angle-cava').value);
 
+                const vertexCava = eval(document.getElementById('vertex').value);
+                const edgeCava = eval(document.getElementById('egde').value);
+
                 setupCanvas();
-                renderCubeCavalier(rotXcava, rotYcava, angleCava);
+                renderCubeCavalier(rotXcava, rotYcava, angleCava, vertexCava, edgeCava);
                 break;
             case 'projecao_cabinet':
                 const rotXcabi = parseInt(document.getElementById('rotX-cabi').value);
                 const rotYcabi = parseInt(document.getElementById('rotY-cabi').value);
                 const angleCabi = parseInt(document.getElementById('angle-cabi').value);
 
+                const vertexCabi = eval(document.getElementById('vertex').value);
+                const edgeCabi = eval(document.getElementById('egde').value);
+
                 setupCanvas();
-                renderCubeCabinet(rotXcabi, rotYcabi, angleCabi);
+                renderCubeCabinet(rotXcabi, rotYcabi, angleCabi, vertexCabi, edgeCabi);
                 break;
             default:
                 console.log(`Botão 'Desenhar' clicado para o algoritmo: ${algorithm}`);
