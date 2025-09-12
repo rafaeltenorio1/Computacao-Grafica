@@ -601,6 +601,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function plotEllipsePoints(xc, yc, x, y) {
+        fillGridCell(xc + x, yc + y, COR_BORDA);
+        fillGridCell(xc - x, yc + y, COR_BORDA);
+        fillGridCell(xc + x, yc - y, COR_BORDA);
+        fillGridCell(xc - x, yc - y, COR_BORDA);
+    }
+
+    function midpointEllipse(xc, yc, rx, ry) {
+        const rx2 = rx * rx;
+        const ry2 = ry * ry;
+        const twoRx2 = 2 * rx2;
+        const twoRy2 = 2 * ry2;
+
+        let p;
+        let x = 0;
+        let y = ry;
+        let px = 0;
+        let py = twoRx2 * y;
+
+        plotEllipsePoints(xc, yc, x, y);
+
+        // Região 1: Onde a inclinação |dy/dx| < 1
+        p = Math.round(ry2 - (rx2 * ry) + (0.25 * rx2));
+        while (px < py) {
+            x++;
+            px += twoRy2;
+            if (p < 0) {
+                p += ry2 + px;
+            } else {
+                y--;
+                py -= twoRx2;
+                p += ry2 + px - py;
+            }
+
+            plotEllipsePoints(xc, yc, x, y);
+
+        }
+        // Região 2: Onde a inclinação |dy/dx| >= 1
+        p = Math.round(ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - rx2 * ry2);
+        while (y > 0) {
+            y--;
+            py -= twoRx2;
+            if (p > 0) {
+                p += rx2 - py;
+            } else {
+                x++;
+                px += twoRy2;
+                p += rx2 - py + px;
+            }
+            plotEllipsePoints(xc, yc, x, y);
+        }
+    }
+
     //Desenhar Curva de Bezier
     function drawCubicBezier(p0, p1, p2, p3, steps = 1000) {
         let lastX = -1;
@@ -1270,11 +1323,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         // --- INÍCIO DA MODIFICAÇÃO ---
-    // Verifica se o algoritmo selecionado NÃO começa com a palavra "projecao"
+        // Verifica se o algoritmo selecionado NÃO começa com a palavra "projecao"
         if (!algorithmSelect.value.startsWith('projecao')) {
             // Pega todos os elementos <input> dentro da área de parâmetros
             const inputs = parametersArea.querySelectorAll('input');
-            
+
             // Para cada input encontrado, define seu valor como vazio
             inputs.forEach(input => {
                 if (input.type === 'checkbox') {
@@ -1284,9 +1337,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-        
+
         // Reseta a contagem de cliques para evitar erros ao iniciar um novo desenho
-        clickCount = 0; 
+        clickCount = 0;
         // --- FIM DA MODIFICAÇÃO ---
 
         console.log("Tela limpa e campos resetados.");
