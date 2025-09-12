@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
         projecao_ortogonal: `
                     <p class="text-xs text-gray-500">Projeta um objeto 3D pré-definido no plano 2D.</p>
                      <textarea id="vertex" name="vertex" rows="5" cols="33" placeholder="Lista de vértices..."></textarea>
-                     <textarea id="faces" name="egdes" rows="5" cols="33" placeholder="Lista de faces..."></textarea>
+                     <textarea id="faces" name="egdes" rows="5" cols="33" placeholder="Lista de arestas..."></textarea>
 
                      <div>
                         <label class="block text-xs font-medium mt-2">Rotação X: <span id="rotX-val">0</span>°</label>
@@ -284,6 +284,50 @@ document.addEventListener('DOMContentLoaded', () => {
                      <div>
                         <label class="block text-xs font-medium">Rotação Y: <span id="rotY-persp-val">0</span>°</label>
                         <input type="range" id="rotY-persp" min="-180" max="180" value="0" class="w-full"/>
+                    </div>
+                `,
+        projecao_cavalier: `
+                    <p class="text-xs text-gray-500">Projeta um objeto 3D com perspectiva.</p>
+                     <div>
+                        <label class="block text-xs font-medium">Objeto 3D</label>
+                        <select id="object-3d-persp" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2">
+                            <option value="cubo">Cubo</option>
+                            <option value="piramide">Pirâmide</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium mt-2">Ângulo de Projeção: <span id="angle-cava-val"></span></label>
+                        <input type="range" id="angle-cava" min="30" max="45" value="30" class="w-full"/>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium">Rotação X: <span id="rotX-cava-val">0</span>°</label>
+                        <input type="range" id="rotX-cava" min="-180" max="180" value="0" class="w-full"/>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium">Rotação Y: <span id="rotY-cava-val">0</span>°</label>
+                        <input type="range" id="rotY-cava" min="-180" max="180" value="0" class="w-full"/>
+                    </div>
+                `,
+        projecao_cabinet: `
+                    <p class="text-xs text-gray-500">Projeta um objeto 3D com perspectiva.</p>
+                     <div>
+                        <label class="block text-xs font-medium">Objeto 3D</label>
+                        <select id="object-3d-persp" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2">
+                            <option value="cubo">Cubo</option>
+                            <option value="piramide">Pirâmide</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium mt-2">Ângulo de Projeção: <span id="angle-cabi-val"></span></label>
+                        <input type="range" id="angle-cabi" min="30" max="45" value="30" class="w-full"/>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium">Rotação X: <span id="rotX-cava-val">0</span>°</label>
+                        <input type="range" id="rotX-cabi" min="-180" max="180" value="0" class="w-full"/>
+                    </div>
+                     <div>
+                        <label class="block text-xs font-medium">Rotação Y: <span id="rotY-cabi-val">0</span>°</label>
+                        <input type="range" id="rotY-cabi" min="-180" max="180" value="0" class="w-full"/>
                     </div>
                 `,
     };
@@ -788,7 +832,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCubePerspective(angleX, angleY, viewerDistance = 30) {
         const radX = angleX * Math.PI / 180;
-        const radY = angleY * Math.PI / 180;        
+        const radY = angleY * Math.PI / 180;
 
         const projectedPoints = [];
 
@@ -798,6 +842,83 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Chamando a nova função de projeção
             const projected = projectPerspective(rotated, viewerDistance);
+
+            const screenX = Math.floor(projected.x + LARGURA_GRID / 2);
+            const screenY = Math.floor(projected.y + ALTURA_GRID / 2);
+
+            projectedPoints.push({ x: screenX, y: screenY });
+        }
+
+        for (const edge of edges) {
+            const p1 = projectedPoints[edge[0]];
+            const p2 = projectedPoints[edge[1]];
+            bresenham(p1.x, p1.y, p2.x, p2.y);
+        }
+    }
+
+    //Algoritmo de projeção Cavalier
+    function projectCavalier(point, angleDeg) {
+        const angleRad = angleDeg * Math.PI / 180;
+
+        // A escala para o eixo Z na projeção cavaleira é 1
+        const scaleZ = 1;
+
+        return {
+            x: point.x + point.z * scaleZ * Math.cos(angleRad),
+            y: point.y + point.z * scaleZ * Math.sin(angleRad)
+        };
+    }
+
+    function renderCubeCavalier(angleX, angleY, angleDeg = 45) {
+        const radX = angleX * Math.PI / 180;
+        const radY = angleY * Math.PI / 180;
+
+        const projectedPoints = [];
+
+        for (const vertex of vertices) {
+            let rotated = rotateY(vertex, radY);
+            rotated = rotateX(rotated, radX);
+
+            // Chamando a nova função de projeção cavaleira
+            const projected = projectCavalier(rotated, angleDeg);
+
+            // Translada o ponto para o centro do canvas
+            const screenX = Math.floor(projected.x + LARGURA_GRID / 2);
+            const screenY = Math.floor(projected.y + ALTURA_GRID / 2);
+
+            projectedPoints.push({ x: screenX, y: screenY });
+        }
+
+        for (const edge of edges) {
+            const p1 = projectedPoints[edge[0]];
+            const p2 = projectedPoints[edge[1]];
+            bresenham(p1.x, p1.y, p2.x, p2.y);
+        }
+    }
+
+    function projectCabinet(point, angleDeg) {
+        const angleRad = angleDeg * Math.PI / 180;
+
+        // A escala para o eixo Z na projeção cavaleira é 1
+        const scaleZ = 0.5;
+
+        return {
+            x: point.x + point.z * scaleZ * Math.cos(angleRad),
+            y: point.y + point.z * scaleZ * Math.sin(angleRad)
+        };
+    }
+
+    function renderCubeCabinet(angleX, angleY, angleDeg = 45) {
+        const radX = angleX * Math.PI / 180;
+        const radY = angleY * Math.PI / 180;
+
+        const projectedPoints = [];
+
+        for (const vertex of vertices) {
+            let rotated = rotateY(vertex, radY);
+            rotated = rotateX(rotated, radX);
+
+            const projected = projectCabinet(rotated, angleDeg);
 
             const screenX = Math.floor(projected.x + LARGURA_GRID / 2);
             const screenY = Math.floor(projected.y + ALTURA_GRID / 2);
@@ -935,6 +1056,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 setupCanvas();
                 renderCubePerspective(rotXpersp, rotYpersp, dist);
+                break;
+            case 'projecao_cavalier':
+                const rotXcava = parseInt(document.getElementById('rotX-cava').value);
+                const rotYcava = parseInt(document.getElementById('rotY-cava').value);
+                const angleCava = parseInt(document.getElementById('angle-cava').value);
+
+                setupCanvas();
+                renderCubeCavalier(rotXcava, rotYcava, angleCava);
+                break;
+            case 'projecao_cabinet':
+                const rotXcabi = parseInt(document.getElementById('rotX-cabi').value);
+                const rotYcabi = parseInt(document.getElementById('rotY-cabi').value);
+                const angleCabi = parseInt(document.getElementById('angle-cabi').value);
+
+                setupCanvas();
+                renderCubeCabinet(rotXcabi, rotYcabi, angleCabi);
                 break;
             default:
                 console.log(`Botão 'Desenhar' clicado para o algoritmo: ${algorithm}`);
