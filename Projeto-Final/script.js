@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const COR_BORDA = '#dc2626';
     const COR_PREENCHIMENTO = 'cyan';
     const COR_CLICK = 'black';
+    const COR_JANELA = 'purple';
+
+    // Constantes para os bits do Outcode (Topo, Fundo, Direita, Esquerda)
+    const INSIDE = 0; // 0000
+    const LEFT = 1; // 0001
+    const RIGHT = 2; // 0010
+    const BOTTOM = 4; // 0100
+    const TOP = 8; // 1000
 
     function rotateY(point, angle) {
         const cos = Math.cos(angle);
@@ -86,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function fillGridCell(x, y, color = COR_CLICK) {
-        grid_color[x][y] = color;
+        //grid_color[x][y] = color;
         const gridX = x * GRID_SIZE;
         const gridY = y * GRID_SIZE;
 
@@ -421,7 +429,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     clickCount = 0;
                 }
                 break;
+            case 'recorte_linha':
+                polygonVertices.push(cell);
+                if (polygonVertices.length === 2) {
+                    let { x_min, y_min, x_max, y_max, largura, altura } = calcularTamanhoJanela(polygonVertices[0], polygonVertices[1]);
+                    document.getElementById('xmin').value = x_min;
+                    document.getElementById('ymin').value = y_min;
+                    document.getElementById('xmax').value = x_max;
+                    document.getElementById('ymax').value = y_max;
+
+                    drawWindowFrame(x_min, x_max, y_min, y_max);
+                } else if (polygonVertices.length === 3) {
+                    document.getElementById('lx1').value = cell.x;
+                    document.getElementById('ly1').value = cell.y;
+                } else if (polygonVertices.length === 4) {
+                    document.getElementById('lx2').value = cell.x;
+                    document.getElementById('ly2').value = cell.y;
+                    polygonVertices = [];
+                }
+                break;
             case 'polilinha':
+
                 polygonVertices.push(cell);
                 const vertexList = document.getElementById('vertex-list');
                 if (polygonVertices.length === 1) vertexList.innerHTML = '';
@@ -908,6 +936,102 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /// Supondo que a função computeOutcode esteja correta e receba os 6 parâmetros
+    function computeOutcode(x, y, xMin, xMax, yMin, yMax) {
+        let code = INSIDE;
+        if (x < xMin) code |= LEFT;
+        else if (x > xMax) code |= RIGHT;
+        if (y < yMin) code |= BOTTOM;
+        else if (y > yMax) code |= TOP;
+        return code;
+    }
+
+
+    function cohenSutherlandClipAndDraw(x1, y1, x2, y2, xMin, xMax, yMin, yMax) {
+        // As funções `computeOutcode` e `bresenham`, bem como as constantes
+        // TOP, BOTTOM, LEFT, RIGHT, devem estar disponíveis no escopo do seu script.
+
+        let outcode1 = computeOutcode(x1, y1, xMin, xMax, yMin, yMax);
+        let outcode2 = computeOutcode(x2, y2, xMin, xMax, yMin, yMax);
+        let accept = false;
+
+        while (true) {
+            // Caso 1: Aceitação Trivial. Ambos os pontos estão dentro da janela.
+            if ((outcode1 | outcode2) === 0) {
+                accept = true;
+                break;
+            }
+            // Caso 2: Rejeição Trivial. Ambos os pontos estão do mesmo lado fora da janela.
+            else if ((outcode1 & outcode2) !== 0) {
+                break;
+            }
+            // Caso 3: Recorte necessário.
+            else {
+                let x, y;
+
+                // Seleciona um dos pontos que está fora da janela.
+                const outcodeOut = outcode1 !== 0 ? outcode1 : outcode2;
+
+                // Calcula o ponto de interseção da linha com a borda da janela.
+                if (outcodeOut & TOP) {
+                    // Evita divisão por zero para linhas perfeitamente horizontais
+                    x = (y2 - y1 === 0) ? x1 : x1 + (x2 - x1) * (yMax - y1) / (y2 - y1);
+                    y = yMax;
+                } else if (outcodeOut & BOTTOM) {
+                    x = (y2 - y1 === 0) ? x1 : x1 + (x2 - x1) * (yMin - y1) / (y2 - y1);
+                    y = yMin;
+                } else if (outcodeOut & RIGHT) {
+                    // Evita divisão por zero para linhas perfeitamente verticais
+                    y = (x2 - x1 === 0) ? y1 : y1 + (y2 - y1) * (xMax - x1) / (x2 - x1);
+                    x = xMax;
+                } else if (outcodeOut & LEFT) {
+                    y = (x2 - x1 === 0) ? y1 : y1 + (y2 - y1) * (xMin - x1) / (x2 - x1);
+                    x = xMin;
+                }
+
+                // Atualiza o ponto que estava fora com as coordenadas da interseção
+                // e recalcula seu outcode. O laço 'while' então repetirá o processo.
+                if (outcodeOut === outcode1) {
+                    x1 = x;
+                    y1 = y;
+                    outcode1 = computeOutcode(x1, y1, xMin, xMax, yMin, yMax);
+                } else {
+                    x2 = x;
+                    y2 = y;
+                    outcode2 = computeOutcode(x2, y2, xMin, xMax, yMin, yMax);
+                }
+            }
+        }
+
+        // CORREÇÃO FINAL: A linha só deve ser desenhada se o laço terminou com 'accept' = true.
+        if (accept) {
+            // Usa a função bresenham, já definida no seu script, para desenhar o segmento
+            // de reta cortado. Math.round é usado para garantir coordenadas de pixels inteiras.
+            bresenham(Math.round(x1), Math.round(y1), Math.round(x2), Math.round(y2));
+        }
+        // Se 'accept' for falso, a função termina sem fazer nada, o que é o comportamento correto.
+    }
+
+    function calcularTamanhoJanela(p1, p2) {
+        const x_min = Math.min(p1.x, p2.x);
+        const y_min = Math.min(p1.y, p2.y);
+        const x_max = Math.max(p1.x, p2.x);
+        const y_max = Math.max(p1.y, p2.y);
+
+        const largura = x_max - x_min;
+        const altura = y_max - y_min;
+
+        return { x_min, y_min, x_max, y_max, largura, altura };
+    }
+
+    function drawWindowFrame(xMin, xMax, yMin, yMax) {
+        bresenham(xMin, yMin, xMax, yMin, COR_JANELA);
+        bresenham(xMin, yMax, xMax, yMax, COR_JANELA);
+
+        bresenham(xMax, yMin, xMax, yMax, COR_JANELA);
+        bresenham(xMin, yMax, xMin, yMin, COR_JANELA);
+    }
+
     // --- FIM DA IMPLEMENTAÇÃO DOS ALGORITMOS ---
 
 
@@ -969,6 +1093,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const startY = document.getElementById('startY').value;
                 const colorRecursive = document.getElementById('fillColor').value;
                 floodFillRecursive(startX, startY, colorRecursive);
+                break;
+            case 'recorte_linha':
+
+                const lx1 = parseInt(document.getElementById('lx1').value);
+                const ly1 = parseInt(document.getElementById('ly1').value);
+                const lx2 = parseInt(document.getElementById('lx2').value);
+                const ly2 = parseInt(document.getElementById('ly2').value);
+
+                const xmin = parseInt(document.getElementById('xmin').value);
+                const xmax = parseInt(document.getElementById('xmax').value);
+                const ymin = parseInt(document.getElementById('ymin').value);
+                const ymax = parseInt(document.getElementById('ymax').value);
+
+                cohenSutherlandClipAndDraw(lx1, ly1, lx2, ly2, xmin, xmax, ymin, ymax);
                 break;
             case 'transformacoes':
                 if (polygonVertices.length < 2) {
