@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const COR_CLICK = 'black';
     const COR_JANELA = 'purple';
 
-    // Constantes para os bits do Outcode (Topo, Fundo, Direita, Esquerda)
     const INSIDE = 0; // 0000
     const LEFT = 1; // 0001
     const RIGHT = 2; // 0010
@@ -51,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Função para ajustar o tamanho do canvas e desenhar a grade
     function setupCanvas() {
         const container = canvas.parentElement;
-        const containerSize = Math.min(container.clientWidth - 32, container.clientHeight - 32); // 32 = padding
+        const containerSize = Math.min(container.clientWidth - 32, container.clientHeight - 32); 
         canvas.width = containerSize;
         canvas.height = containerSize;
         drawGrid();
@@ -61,15 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawGrid() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Fundo branco
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Linhas da grade
-        ctx.strokeStyle = '#000000'; // Cor preta
+        ctx.strokeStyle = '#000000'; 
         ctx.lineWidth = 1;
 
-        // Linhas verticais
         for (let x = 0; x <= canvas.width; x += GRID_SIZE) {
             ctx.beginPath();
             ctx.moveTo(x, 0);
@@ -77,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.stroke();
         }
 
-        // Linhas horizontais
         for (let y = 0; y <= canvas.height; y += GRID_SIZE) {
             ctx.beginPath();
             ctx.moveTo(0, y);
@@ -93,8 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return { x: cellX, y: cellY };
     }
 
-    function fillGridCell(x, y, color = COR_CLICK) {
-        //grid_color[x][y] = color;
+    function desenharCelula(x, y, color = COR_CLICK){
+
+        if (x < 0 || x >= LARGURA_GRID || y < 0 || y >= ALTURA_GRID) {
+            return; 
+        }
+        grid_color[x][y] = color;
         const gridX = x * GRID_SIZE;
         const gridY = y * GRID_SIZE;
 
@@ -105,19 +104,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function drawHorizontalLine(x1, x2, y, color = COR_PREENCHIMENTO) {
         for (let x = Math.round(x1); x < Math.round(x2); x++) {
-            fillGridCell(x, y, color);
+            desenharCelula(x, y, color);
         }
     }
 
     function euclideanDistance(x1, y1, x2, y2) {
         const dx = x2 - x1;
         const dy = y2 - y1;
-        //return Math.sqrt(dx*dx + dy*dy);
         return Math.hypot(dx, dy);
     }
 
 
-    // Mapeia os algoritmos para o HTML de seus parâmetros
     const parametersHTML = {
         bresenham: `
                     <p class="text-xs text-gray-500">Clique em 2 pontos no canvas ou insira as coordenadas.</p>
@@ -279,8 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <textarea id="egde" name="egde-persp" rows="5" cols="33" placeholder="Lista de arestas...">[[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]</textarea>
 
                      <div>
-                        <label class="block text-xs font-medium mt-2">Distância da Câmera: <span id="dist-val">5</span></label>
-                        <input type="range" id="dist" min="20" max="40" value="5" class="w-full"/>
+                        <label class="block text-xs font-medium mt-2">Distância da Câmera: <span id="dist-val">16</span></label>
+                        <input type="range" id="dist" min="0" max="100" value="16" class="w-full"/>
                     </div>
                      <div>
                         <label class="block text-xs font-medium">Rotação X: <span id="rotX-persp-val">0</span>°</label>
@@ -323,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="range" id="angle-cabi" min="30" max="45" value="30" class="w-full"/>
                     </div>
                      <div>
-                        <label class="block text-xs font-medium">Rotação X: <span id="rotX-cava-val">0</span>°</label>
+                        <label class="block text-xs font-medium">Rotação X: <span id="rotX-cabi-val">0</span>°</label>
                         <input type="range" id="rotX-cabi" min="-180" max="180" value="0" class="w-full"/>
                     </div>
                      <div>
@@ -333,7 +330,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 `,
     };
 
-    // HTML para parâmetros de transformações
     const transformParamsHTML = {
         translacao: `
                     <label class="block text-xs font-medium mt-2">Fatores (Tx, Ty)</label>
@@ -369,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             transformTypeSelect.addEventListener('change', updateTransformParams);
-            updateTransformParams(); // Chama uma vez para inicializar
+            updateTransformParams(); 
         }
 
         // Lógica para atualizar os valores dos sliders de projeção
@@ -396,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const y = Math.round(e.clientY - rect.top);
 
         const cell = pixelToCell(x, y);
-        fillGridCell(cell.x, cell.y, 'black');
+        desenharCelula(cell.x, cell.y, 'black');
 
         const selectedAlgorithm = algorithmSelect.value;
 
@@ -456,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('xmax').value = x_max;
                     document.getElementById('ymax').value = y_max;
 
-                    drawWindowFrame(x_min, x_max, y_min, y_max);
+                    desenhaJanela(x_min, x_max, y_min, y_max);
                 } else if (polygonVertices.length === 3) {
                     document.getElementById('lx1').value = cell.x;
                     document.getElementById('ly1').value = cell.y;
@@ -482,22 +478,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'elipse':
                 if (clickCount === 0) {
-                    // Primeiro clique: define o centro
                     document.getElementById('xc').value = cell.x;
                     document.getElementById('yc').value = cell.y;
                     clickCount++;
                 } else if (clickCount === 1) {
-                    // Segundo clique: define o raio X
                     const xc = document.getElementById('xc').value;
-                    const rx = Math.abs(cell.x - xc); // Distância horizontal do centro
+                    const rx = Math.abs(cell.x - xc); 
                     document.getElementById('rx').value = rx;
                     clickCount++;
                 } else {
-                    // Terceiro clique: define o raio Y
                     const yc = document.getElementById('yc').value;
-                    const ry = Math.abs(cell.y - yc); // Distância vertical do centro
+                    const ry = Math.abs(cell.y - yc); 
                     document.getElementById('ry').value = ry;
-                    clickCount = 0; // Reseta para a próxima elipse
+                    clickCount = 0; 
                 }
                 break;
         }
@@ -517,38 +510,32 @@ document.addEventListener('DOMContentLoaded', () => {
         statusArea.textContent = 'Passe o mouse sobre o canvas para ver as coordenadas.';
     });
 
-    // --- INÍCIO DA IMPLEMENTAÇÃO DOS ALGORITMOS ---
+    // ------------- INÍCIO DA IMPLEMENTAÇÃO DOS ALGORITMOS -----------------------------------
 
-    // Algoritmo de Bresenham para desenhar uma linha
+    // Algoritmo de bresenham 
     function bresenham(x0, y0, x1, y1, color = COR_BORDA) {
-        // Math.abs para garantir que sejam positivos
         const dx = Math.abs(x1 - x0);
         const dy = -Math.abs(y1 - y0);
 
-        // Determina a direção do incremento/decremento
         const sx = x0 < x1 ? 1 : -1;
         const sy = y0 < y1 ? 1 : -1;
 
-        // Variável de erro/decisão
         let err = dx + dy;
 
         while (true) {
-            fillGridCell(x0, y0, color);
+            desenharCelula(x0, y0, color);
 
-            // Condição de parada: chegamos ao ponto final
             if (x0 === x1 && y0 === y1) {
                 break;
             }
 
             let e2 = 2 * err;
 
-            // A linha está mais próxima do próximo passo em X
             if (e2 >= dy) {
                 err += dy;
                 x0 += sx;
             }
 
-            // A linha está mais próxima do próximo passo em Y
             if (e2 <= dx) {
                 err += dx;
                 y0 += sy;
@@ -556,59 +543,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function plotCirclePoints(xc, yc, x, y) {
-        fillGridCell(xc + x, yc + y, COR_BORDA);
-        fillGridCell(xc - x, yc + y, COR_BORDA);
-        fillGridCell(xc + x, yc - y, COR_BORDA);
-        fillGridCell(xc - x, yc - y, COR_BORDA);
-        fillGridCell(xc + y, yc + x, COR_BORDA);
-        fillGridCell(xc - y, yc + x, COR_BORDA);
-        fillGridCell(xc + y, yc - x, COR_BORDA);
-        fillGridCell(xc - y, yc - x, COR_BORDA);
+    // Algortimo bresenham para circulos
+    function desenhaCirculo(xc, yc, x, y) {
+        desenharCelula(xc + x, yc + y, COR_BORDA);
+        desenharCelula(xc - x, yc + y, COR_BORDA);
+        desenharCelula(xc + x, yc - y, COR_BORDA);
+        desenharCelula(xc - x, yc - y, COR_BORDA);
+        desenharCelula(xc + y, yc + x, COR_BORDA);
+        desenharCelula(xc - y, yc + x, COR_BORDA);
+        desenharCelula(xc + y, yc - x, COR_BORDA);
+        desenharCelula(xc - y, yc - x, COR_BORDA);
     }
 
-    // Algortimo Besenhan para circulos
-    function midpointCircle(xc, yc, radius) {
+    function bresenhamCirculo(xc, yc, radius) {
         let x = radius;
         let y = 0;
 
-        // Parâmetro de decisão inicial
-        // P = 5/4 - r, para evitar float, podemos usar P = 1 - r
         let P = 1 - radius;
 
-        // Desenha os primeiros pontos nos eixos principais
-        plotCirclePoints(xc, yc, x, y);
+        desenhaCirculo(xc, yc, x, y);
 
-        // Itera enquanto x > y para cobrir um octante
         while (x > y) {
             y++;
 
-            // O ponto médio está dentro ou sobre o perímetro do círculo
             if (P <= 0) {
                 P = P + 2 * y + 1;
             }
-            // O ponto médio está fora do perímetro
             else {
                 x--;
                 P = P + 2 * y - 2 * x + 1;
             }
 
-            // Para cada ponto calculado, desenha os 8 pontos simétricos
             if (x < y) {
                 break;
             }
-            plotCirclePoints(xc, yc, x, y);
+            desenhaCirculo(xc, yc, x, y);
         }
     }
 
-    function plotEllipsePoints(xc, yc, x, y) {
-        fillGridCell(xc + x, yc + y, COR_BORDA);
-        fillGridCell(xc - x, yc + y, COR_BORDA);
-        fillGridCell(xc + x, yc - y, COR_BORDA);
-        fillGridCell(xc - x, yc - y, COR_BORDA);
+    // Algoritmo de elipse
+    function desenhaElipse(xc, yc, x, y) {
+        desenharCelula(xc + x, yc + y, COR_BORDA);
+        desenharCelula(xc - x, yc + y, COR_BORDA);
+        desenharCelula(xc + x, yc - y, COR_BORDA);
+        desenharCelula(xc - x, yc - y, COR_BORDA);
     }
 
-    function midpointEllipse(xc, yc, rx, ry) {
+    function pontoMedioElipse(xc, yc, rx, ry) {
         const rx2 = rx * rx;
         const ry2 = ry * ry;
         const twoRx2 = 2 * rx2;
@@ -620,9 +601,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let px = 0;
         let py = twoRx2 * y;
 
-        plotEllipsePoints(xc, yc, x, y);
+        desenhaElipse(xc, yc, x, y);
 
-        // Região 1: Onde a inclinação |dy/dx| < 1
         p = Math.round(ry2 - (rx2 * ry) + (0.25 * rx2));
         while (px < py) {
             x++;
@@ -635,10 +615,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 p += ry2 + px - py;
             }
 
-            plotEllipsePoints(xc, yc, x, y);
+            desenhaElipse(xc, yc, x, y);
 
         }
-        // Região 2: Onde a inclinação |dy/dx| >= 1
         p = Math.round(ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - rx2 * ry2);
         while (y > 0) {
             y--;
@@ -650,12 +629,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 px += twoRy2;
                 p += rx2 - py + px;
             }
-            plotEllipsePoints(xc, yc, x, y);
+            desenhaElipse(xc, yc, x, y);
         }
     }
 
-    //Desenhar Curva de Bezier
-    function drawCubicBezier(p0, p1, p2, p3, steps = 1000) {
+    //Desenhar curva de bezier
+    function desenhaCurvaBezier(p0, p1, p2, p3, steps = 1000) {
         let lastX = -1;
         let lastY = -1;
 
@@ -663,7 +642,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const t = i / steps;
             const invT = 1 - t;
 
-            // Fórmula da Curva de Bézier Cúbica
             const x = Math.round(
                 invT * invT * invT * p0.x +
                 3 * invT * invT * t * p1.x +
@@ -678,9 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 t * t * t * p3.y
             );
 
-            // Se este não for o primeiro ponto, desenha uma linha do último ponto até o atual
             if (i > 0) {
-                // Evita desenhar linhas sobrepostas para o mesmo pixel
                 if (x !== lastX || y !== lastY) {
                     bresenham(lastX, lastY, x, y, COR_BORDA);
                 }
@@ -690,22 +666,19 @@ document.addEventListener('DOMContentLoaded', () => {
             lastY = y;
         }
     }
-    //Algoritmo de poligonos
-    function drawPoly(points, isClosed = false) {
-        // A polilinha precisa de pelo menos 2 pontos para formar uma linha.
+    //Algoritmo de polilinhas e poligonos
+    function desenhaPolilinhas(points, isClosed = false) {
         if (!points || points.length < 2) {
             console.log("É necessário pelo menos 2 pontos para desenhar.");
             return;
         }
 
-        // Itera sobre os pontos, desenhando uma linha do ponto i para o i+1.
         for (let i = 0; i < points.length - 1; i++) {
             const startPoint = points[i];
             const endPoint = points[i + 1];
             bresenham(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
         }
 
-        // Se for um polígono fechado, desenha a última linha de volta ao início.
         if (isClosed && points.length > 2) {
             const lastPoint = points[points.length - 1];
             const firstPoint = points[0];
@@ -716,41 +689,32 @@ document.addEventListener('DOMContentLoaded', () => {
     //Algoritmo de preenchimento recursivo
     function getPixelColor(x, y) {
         if (x < 0 || x >= LARGURA_GRID || y < 0 || y >= ALTURA_GRID) {
-            return 'uncolor'; // Retorna um valor inválido para fora dos limites
+            return 'uncolor'; 
         }
         return grid_color[x][y];
     }
 
-    //Algoritmo de preencjimento recursivo
-    function floodFillRecursive(x, y, color = COR_PREENCHIMENTO) {
-        // Condição de parada 1: Fora dos limites.
-        // Condição de parada 2: Já é uma borda ou já está preenchido.
+    //Algoritmo de preenchimento recursivo
+    function preenchimentoRecursivo(x, y, color = COR_PREENCHIMENTO) {
+
         const currentColor = getPixelColor(x, y);
         if (currentColor === "uncolor" || currentColor === COR_BORDA || currentColor === color) {
             return;
         }
 
-        // Ação: Pinta o pixel atual
+        desenharCelula(x, y, color);
 
-        fillGridCell(x, y, color);
-
-        // Recursão: Chama para os vizinhos
-        //setTimeout(floodFillRecursive, 500, (x + 1), y);
-        //setTimeout(floodFillRecursive, 500, (x - 1), y);
-        //setTimeout(floodFillRecursive, 500, x, (y + 1));
-        //setTimeout(floodFillRecursive, 500, x, (y - 1));
-
-        floodFillRecursive(x + 1, y, color);
-        floodFillRecursive(x - 1, y, color);
-        floodFillRecursive(x, y + 1, color);
-        floodFillRecursive(x, y - 1, color);
+        preenchimentoRecursivo(x + 1, y, color);
+        preenchimentoRecursivo(x - 1, y, color);
+        preenchimentoRecursivo(x, y + 1, color);
+        preenchimentoRecursivo(x, y - 1, color);
     }
 
-    function scanLineFill(points, color = COR_PREENCHIMENTO) {
+    // Preenchimento de Varredura
+    function preenchimentoVarredura(points, color = COR_PREENCHIMENTO) {
         let minY = Infinity;
         let maxY = -Infinity;
 
-        // Encontra os limites verticais do polígono
         points.forEach(p => {
             minY = Math.min(minY, p.y);
             maxY = Math.max(maxY, p.y);
@@ -761,12 +725,10 @@ document.addEventListener('DOMContentLoaded', () => {
             edgeTable[i] = [];
         }
 
-        // 1. Construir a Tabela de Arestas (Edge Table)
         for (let i = 0; i < points.length; i++) {
             const p1 = points[i];
             const p2 = points[(i + 1) % points.length];
 
-            // Ignora arestas horizontais
             if (p1.y === p2.y) continue;
 
             const yMin = Math.min(p1.y, p2.y);
@@ -783,33 +745,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let activeEdgeTable = [];
 
-        // 2. Processar as Linhas de Varredura de minY até maxY
         for (let y = minY; y < maxY; y++) {
-            // Adiciona novas arestas da ET para a AET
             if (edgeTable[y]) {
                 activeEdgeTable.push(...edgeTable[y]);
             }
 
-            // Remove arestas que terminaram
             activeEdgeTable = activeEdgeTable.filter(edge => edge.yMax !== y);
 
-            // Ordena a AET pela coordenada X
             activeEdgeTable.sort((a, b) => a.x - b.x);
 
-            // Preenche entre os pares de arestas
             for (let i = 0; i < activeEdgeTable.length; i += 2) {
                 if (activeEdgeTable[i + 1]) {
                     drawHorizontalLine(activeEdgeTable[i].x, activeEdgeTable[i + 1].x, y, color);
                 }
             }
 
-            // Atualiza a coordenada X de cada aresta para a próxima linha
             activeEdgeTable.forEach(edge => {
                 edge.x += edge.invSlope;
             });
         }
     }
 
+    
     function calculateCentroid(points) {
         if (!points || points.length === 0) {
             return { x: 0, y: 0 };
@@ -826,7 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Função para Transladar o polígono
+    // Função para transladar o polígono
     function translacao(points, tx, ty) {
         return points.map(p => ({
             x: p.x + tx,
@@ -834,7 +791,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }));
     }
 
-    // Função para Rotacionar o polígono em torno de seu centroide
+    // Função para rotacionar o polígono em torno de seu centroide
     function rotacao(points, angleDegrees) {
         const angleRadians = angleDegrees * (Math.PI / 180);
         const cosA = Math.cos(angleRadians);
@@ -842,15 +799,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const centroid = calculateCentroid(points);
 
         return points.map(p => {
-            // 1. Transladar para a origem
             const tempX = p.x - centroid.x;
             const tempY = p.y - centroid.y;
 
-            // 2. Rotacionar
             const rotatedX = tempX * cosA - tempY * sinA;
             const rotatedY = tempX * sinA + tempY * cosA;
 
-            // 3. Transladar de volta
             return {
                 x: Math.round(rotatedX + centroid.x),
                 y: Math.round(rotatedY + centroid.y)
@@ -858,20 +812,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Função para Escalar o polígono em torno de seu centroide
+    // Função para Escalar o polígono em torno de seu centro
     function escala(points, sx, sy) {
         const centroid = calculateCentroid(points);
 
         return points.map(p => {
-            // 1. Transladar para a origem
             const tempX = p.x - centroid.x;
             const tempY = p.y - centroid.y;
 
-            // 2. Escalar
             const scaledX = tempX * sx;
             const scaledY = tempY * sy;
 
-            // 3. Transladar de volta
             return {
                 x: Math.round(scaledX + centroid.x),
                 y: Math.round(scaledY + centroid.y)
@@ -880,32 +831,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     //Algoritmo de projeção ortogonal
-    function projectOthogonal(point) {
-        // Simplesmente descarta a coordenada Z
+    function projecaoOrtogonal(point) {
         return { x: point.x, y: point.y };
     }
 
-    function renderCubeOthogonal(angleX, angleY, vertices, edges) {
+    function desenhaOrtogonal(angleX, angleY, vertices, edges) {
         const radX = angleX * Math.PI / 180;
         const radY = angleY * Math.PI / 180;
 
         let projectedPoints = [];
 
-        // 1. Para cada vértice: rotaciona, projeta e translada para o centro do canvas
         for (const vertex of vertices) {
             let rotated = rotateY(vertex, radY);
             rotated = rotateX(rotated, radX);
 
-            const projected = projectOthogonal(rotated);
+            const projected = projecaoOrtogonal(rotated);
 
-            // Translada o ponto para o centro do canvas
             const screenX = Math.floor(projected.x + LARGURA_GRID / 2);
             const screenY = Math.floor(projected.y + ALTURA_GRID / 2);
 
             projectedPoints.push({ x: screenX, y: screenY });
         }
 
-        // 2. Para cada aresta: desenha uma linha entre seus vértices projetados
         for (const edge of edges) {
             const p1 = projectedPoints[edge[0]];
             const p2 = projectedPoints[edge[1]];
@@ -914,8 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     //Algoritmo de projeção perspectiva
-    function projectPerspective(point, viewerDistance) {
-        // Fator de escala baseado na distância e na profundidade Z
+    function projecaoPerspectiva(point, viewerDistance) {
         const factor = viewerDistance / (viewerDistance + point.z);
 
         return {
@@ -924,7 +870,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function renderCubePerspective(angleX, angleY, viewerDistance = 30, vertices, edges) {
+    function desenhaPerspectiva(angleX, angleY, viewerDistance = 30, vertices, edges) {
         const radX = angleX * Math.PI / 180;
         const radY = angleY * Math.PI / 180;
 
@@ -934,8 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let rotated = rotateY(vertex, radY);
             rotated = rotateX(rotated, radX);
 
-            // Chamando a nova função de projeção
-            const projected = projectPerspective(rotated, viewerDistance);
+            const projected = projecaoPerspectiva(rotated, viewerDistance);
 
             const screenX = Math.floor(projected.x + LARGURA_GRID / 2);
             const screenY = Math.floor(projected.y + ALTURA_GRID / 2);
@@ -951,10 +896,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     //Algoritmo de projeção Cavalier
-    function projectCavalier(point, angleDeg) {
+    function projecaoCavalier(point, angleDeg) {
         const angleRad = angleDeg * Math.PI / 180;
 
-        // A escala para o eixo Z na projeção cavaleira é 1
         const scaleZ = 1;
 
         return {
@@ -963,7 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function renderCubeCavalier(angleX, angleY, angleDeg = 45, vertices, edges) {
+    function desenhaCavalier(angleX, angleY, angleDeg = 45, vertices, edges) {
         const radX = angleX * Math.PI / 180;
         const radY = angleY * Math.PI / 180;
 
@@ -973,10 +917,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let rotated = rotateY(vertex, radY);
             rotated = rotateX(rotated, radX);
 
-            // Chamando a nova função de projeção cavaleira
-            const projected = projectCavalier(rotated, angleDeg);
+            const projected = projecaoCavalier(rotated, angleDeg);
 
-            // Translada o ponto para o centro do canvas
             const screenX = Math.floor(projected.x + LARGURA_GRID / 2);
             const screenY = Math.floor(projected.y + ALTURA_GRID / 2);
 
@@ -990,10 +932,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function projectCabinet(point, angleDeg) {
+    function projecaoCabinet(point, angleDeg) {
         const angleRad = angleDeg * Math.PI / 180;
 
-        // A escala para o eixo Z na projeção cavaleira é 1
         const scaleZ = 0.5;
 
         return {
@@ -1002,7 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function renderCubeCabinet(angleX, angleY, angleDeg = 45, vertices, edges) {
+    function desenhaCabinet(angleX, angleY, angleDeg = 45, vertices, edges) {
         const radX = angleX * Math.PI / 180;
         const radY = angleY * Math.PI / 180;
 
@@ -1012,7 +953,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let rotated = rotateY(vertex, radY);
             rotated = rotateX(rotated, radX);
 
-            const projected = projectCabinet(rotated, angleDeg);
+            const projected = projecaoCabinet(rotated, angleDeg);
 
             const screenX = Math.floor(projected.x + LARGURA_GRID / 2);
             const screenY = Math.floor(projected.y + ALTURA_GRID / 2);
@@ -1027,7 +968,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /// Supondo que a função computeOutcode esteja correta e receba os 6 parâmetros
     function computeOutcode(x, y, xMin, xMax, yMin, yMax) {
         let code = INSIDE;
         if (x < xMin) code |= LEFT;
@@ -1037,42 +977,33 @@ document.addEventListener('DOMContentLoaded', () => {
         return code;
     }
 
-
-    function cohenSutherlandClipAndDraw(x1, y1, x2, y2, xMin, xMax, yMin, yMax) {
-        // As funções `computeOutcode` e `bresenham`, bem como as constantes
-        // TOP, BOTTOM, LEFT, RIGHT, devem estar disponíveis no escopo do seu script.
+    // Recorte de Linha
+    function cohenSutherland(x1, y1, x2, y2, xMin, xMax, yMin, yMax) {
 
         let outcode1 = computeOutcode(x1, y1, xMin, xMax, yMin, yMax);
         let outcode2 = computeOutcode(x2, y2, xMin, xMax, yMin, yMax);
         let accept = false;
 
         while (true) {
-            // Caso 1: Aceitação Trivial. Ambos os pontos estão dentro da janela.
             if ((outcode1 | outcode2) === 0) {
                 accept = true;
                 break;
             }
-            // Caso 2: Rejeição Trivial. Ambos os pontos estão do mesmo lado fora da janela.
             else if ((outcode1 & outcode2) !== 0) {
                 break;
             }
-            // Caso 3: Recorte necessário.
             else {
                 let x, y;
 
-                // Seleciona um dos pontos que está fora da janela.
                 const outcodeOut = outcode1 !== 0 ? outcode1 : outcode2;
 
-                // Calcula o ponto de interseção da linha com a borda da janela.
                 if (outcodeOut & TOP) {
-                    // Evita divisão por zero para linhas perfeitamente horizontais
                     x = (y2 - y1 === 0) ? x1 : x1 + (x2 - x1) * (yMax - y1) / (y2 - y1);
                     y = yMax;
                 } else if (outcodeOut & BOTTOM) {
                     x = (y2 - y1 === 0) ? x1 : x1 + (x2 - x1) * (yMin - y1) / (y2 - y1);
                     y = yMin;
                 } else if (outcodeOut & RIGHT) {
-                    // Evita divisão por zero para linhas perfeitamente verticais
                     y = (x2 - x1 === 0) ? y1 : y1 + (y2 - y1) * (xMax - x1) / (x2 - x1);
                     x = xMax;
                 } else if (outcodeOut & LEFT) {
@@ -1080,8 +1011,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     x = xMin;
                 }
 
-                // Atualiza o ponto que estava fora com as coordenadas da interseção
-                // e recalcula seu outcode. O laço 'while' então repetirá o processo.
                 if (outcodeOut === outcode1) {
                     x1 = x;
                     y1 = y;
@@ -1094,13 +1023,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // CORREÇÃO FINAL: A linha só deve ser desenhada se o laço terminou com 'accept' = true.
         if (accept) {
-            // Usa a função bresenham, já definida no seu script, para desenhar o segmento
-            // de reta cortado. Math.round é usado para garantir coordenadas de pixels inteiras.
             bresenham(Math.round(x1), Math.round(y1), Math.round(x2), Math.round(y2));
         }
-        // Se 'accept' for falso, a função termina sem fazer nada, o que é o comportamento correto.
     }
 
     function calcularTamanhoJanela(p1, p2) {
@@ -1115,7 +1040,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return { x_min, y_min, x_max, y_max, largura, altura };
     }
 
-    function drawWindowFrame(xMin, xMax, yMin, yMax) {
+    function desenhaJanela(xMin, xMax, yMin, yMax) {
         bresenham(xMin, yMin, xMax, yMin, COR_JANELA);
         bresenham(xMin, yMax, xMax, yMax, COR_JANELA);
 
@@ -1123,10 +1048,10 @@ document.addEventListener('DOMContentLoaded', () => {
         bresenham(xMin, yMax, xMin, yMin, COR_JANELA);
     }
 
-    // --- FIM DA IMPLEMENTAÇÃO DOS ALGORITMOS ---
+    // -------------------- FIM DA IMPLEMENTAÇÃO DOS ALGORITMOS ------------------------------
 
 
-    // Função de Desenho (agora com a lógica de Bresenham)
+    // Função de Desenho
     drawButton.addEventListener('click', () => {
         const algorithm = algorithmSelect.value;
 
@@ -1149,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const yc = parseInt(document.getElementById('yc').value);
                 const raio = parseInt(document.getElementById('raio').value);
 
-                midpointCircle(xc, yc, raio);
+                bresenhamCirculo(xc, yc, raio);
 
                 break;
             case 'curva':
@@ -1172,18 +1097,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     y: parseInt(document.getElementById('p4y').value)
                 };
 
-                drawCubicBezier(p1, p2, p3, p4);
+                desenhaCurvaBezier(p1, p2, p3, p4);
 
                 break;
             case 'polilinha':
                 const isClosed = document.getElementById('fechado').checked;
-                drawPoly(polygonVertices, isClosed);
+                desenhaPolilinhas(polygonVertices, isClosed);
                 break;
             case 'preenchimento_recursivo':
-                const startX = document.getElementById('startX').value;
-                const startY = document.getElementById('startY').value;
+                const startX = parseInt(document.getElementById('startX').value);
+                const startY = parseInt(document.getElementById('startY').value);
                 const colorRecursive = document.getElementById('fillColor').value;
-                floodFillRecursive(startX, startY, colorRecursive);
+                preenchimentoRecursivo(startX, startY, colorRecursive);
                 break;
             case 'recorte_linha':
 
@@ -1197,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ymin = parseInt(document.getElementById('ymin').value);
                 const ymax = parseInt(document.getElementById('ymax').value);
 
-                cohenSutherlandClipAndDraw(lx1, ly1, lx2, ly2, xmin, xmax, ymin, ymax);
+                cohenSutherland(lx1, ly1, lx2, ly2, xmin, xmax, ymin, ymax);
                 break;
             case 'transformacoes':
                 if (polygonVertices.length < 2) {
@@ -1224,14 +1149,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                 }
 
-                // Atualiza o polígono original com os novos vértices
                 polygonVertices = transformedVertices;
 
-                // Limpa o canvas e redesenha o polígono transformado
                 setupCanvas();
-                drawPoly(polygonVertices, document.getElementById('fechado')?.checked || true);
+                desenhaPolilinhas(polygonVertices, document.getElementById('fechado')?.checked || true);
 
-                // Atualiza a lista de vértices na UI de polilinha
                 const vertexList = document.getElementById('vertex-list');
                 if (vertexList) {
                     vertexList.innerHTML = ''; // Limpa a lista
@@ -1242,8 +1164,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'preenchimento_varredura':
                 const scanlineColor = document.getElementById('scanlineColor').value;
-                scanLineFill(polygonVertices, scanlineColor);
-                drawPoly(polygonVertices, true);
+                preenchimentoVarredura(polygonVertices, scanlineColor);
+                desenhaPolilinhas(polygonVertices, true);
                 break;
             case 'projecao_ortogonal':
                 const rotX = parseInt(document.getElementById('rotX').value);
@@ -1253,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const edgeOrto = eval(document.getElementById('egde').value);
 
                 setupCanvas();
-                renderCubeOthogonal(rotX, rotY, vertexOrto, edgeOrto);
+                desenhaOrtogonal(rotX, rotY, vertexOrto, edgeOrto);
                 break;
 
             case 'projecao_perspectiva':
@@ -1265,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const edgePersp = eval(document.getElementById('egde').value);
 
                 setupCanvas();
-                renderCubePerspective(rotXpersp, rotYpersp, dist, vertexPersp, edgePersp);
+                desenhaPerspectiva(rotXpersp, rotYpersp, dist, vertexPersp, edgePersp);
                 break;
             case 'projecao_cavalier':
                 const rotXcava = parseInt(document.getElementById('rotX-cava').value);
@@ -1276,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const edgeCava = eval(document.getElementById('egde').value);
 
                 setupCanvas();
-                renderCubeCavalier(rotXcava, rotYcava, angleCava, vertexCava, edgeCava);
+                desenhaCavalier(rotXcava, rotYcava, angleCava, vertexCava, edgeCava);
                 break;
             case 'projecao_cabinet':
                 const rotXcabi = parseInt(document.getElementById('rotX-cabi').value);
@@ -1287,7 +1209,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const edgeCabi = eval(document.getElementById('egde').value);
 
                 setupCanvas();
-                renderCubeCabinet(rotXcabi, rotYcabi, angleCabi, vertexCabi, edgeCabi);
+                desenhaCabinet(rotXcabi, rotYcabi, angleCabi, vertexCabi, edgeCabi);
                 break;
             case 'elipse':
                 const xc_elipse = parseInt(document.getElementById('xc').value);
@@ -1296,7 +1218,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ry = parseInt(document.getElementById('ry').value);
 
                 if (!isNaN(xc_elipse) && !isNaN(yc_elipse) && !isNaN(rx) && !isNaN(ry)) {
-                    midpointEllipse(xc_elipse, yc_elipse, rx, ry);
+                    pontoMedioElipse(xc_elipse, yc_elipse, rx, ry);
                 } else {
                     alert("Por favor, defina o centro e os raios da elipse.");
                 }
@@ -1306,13 +1228,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(`O algoritmo "${algorithm}" seria executado agora. A lógica de desenho ainda precisa ser implementada.`);
                 break;
         }
-        //console.log(grid_color);
     });
 
     // Limpar Tela
     clearButton.addEventListener('click', () => {
-        setupCanvas(); // Redesenha a grade, limpando tudo
-        polygonVertices = []; // Limpa os vértices do polígono
+        setupCanvas(); 
+        polygonVertices = []; 
         if (document.getElementById('vertex-list')) {
             document.getElementById('vertex-list').innerHTML = 'Nenhum vértice adicionado.';
         }
@@ -1322,37 +1243,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 grid_color[i][j] = 'white';
             }
         }
-        // --- INÍCIO DA MODIFICAÇÃO ---
-        // Verifica se o algoritmo selecionado NÃO começa com a palavra "projecao"
         if (!algorithmSelect.value.startsWith('projecao')) {
-            // Pega todos os elementos <input> dentro da área de parâmetros
             const inputs = parametersArea.querySelectorAll('input');
 
-            // Para cada input encontrado, define seu valor como vazio
             inputs.forEach(input => {
-                if (input.type === 'checkbox') {
-                    input.checked = false; // Para checkboxes, desmarcamos
+                if (input.type === 'checkbox' || input.type === 'color'){
+                    input.checked = false; 
                 } else {
-                    input.value = ''; // Para outros inputs, limpamos o valor
+                    input.value = ''; 
                 }
             });
         }
 
-        // Reseta a contagem de cliques para evitar erros ao iniciar um novo desenho
         clickCount = 0;
-        // --- FIM DA MODIFICAÇÃO ---
 
         console.log("Tela limpa e campos resetados.");
     });
 
-    // Event listener para mudança de algoritmo
     algorithmSelect.addEventListener('change', () => {
         updateParametersUI();
-        clickCount = 0; // Reseta a contagem de cliques
+        clickCount = 0; 
     });
 
-    // Inicialização
     window.addEventListener('resize', setupCanvas);
     setupCanvas();
-    updateParametersUI(); // Carrega os parâmetros do primeiro algoritmo da lista
+    updateParametersUI(); 
 });
