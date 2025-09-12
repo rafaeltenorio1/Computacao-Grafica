@@ -142,6 +142,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         <input type="number" id="raio" placeholder="Raio" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2"/>
                     </div>
                 `,
+        elipse: `
+                    <p class="text-xs text-gray-500">Clique no centro, depois em 2 pontos para os raios (horizontal e vertical).</p>
+                    <div>
+                        <label class="block text-xs font-medium">Centro (Xc, Yc)</label>
+                        <div class="flex space-x-2 mt-1">
+                            <input type="number" id="xc" placeholder="Xc" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                            <input type="number" id="yc" placeholder="Yc" class="w-full border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium">Raio X (Rx)</label>
+                        <input type="number" id="rx" placeholder="Raio X" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium">Raio Y (Ry)</label>
+                        <input type="number" id="ry" placeholder="Raio Y" class="w-full mt-1 border-gray-300 rounded-md shadow-sm text-sm p-2"/>
+                    </div>
+                `,
         curva: `
                     <p class="text-xs text-gray-500">Defina 4 pontos de controle para a Curva de Bézier.</p>
                     ${[1, 2, 3, 4].map(i => `
@@ -433,6 +451,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'preenchimento_varredura':
                 polygonVertices.push(cell);
+                break;
+            case 'elipse':
+                if (clickCount === 0) {
+                    // Primeiro clique: define o centro
+                    document.getElementById('xc').value = cell.x;
+                    document.getElementById('yc').value = cell.y;
+                    clickCount++;
+                } else if (clickCount === 1) {
+                    // Segundo clique: define o raio X
+                    const xc = document.getElementById('xc').value;
+                    const rx = Math.abs(cell.x - xc); // Distância horizontal do centro
+                    document.getElementById('rx').value = rx;
+                    clickCount++;
+                } else {
+                    // Terceiro clique: define o raio Y
+                    const yc = document.getElementById('yc').value;
+                    const ry = Math.abs(cell.y - yc); // Distância vertical do centro
+                    document.getElementById('ry').value = ry;
+                    clickCount = 0; // Reseta para a próxima elipse
+                }
                 break;
         }
     });
@@ -908,6 +946,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+        // --- INÍCIO DO CÓDIGO PARA ADICIONAR ---
+
+    /**
+     * @docs Pinta os 4 pontos simétricos da elipse.
+     * @param {number} xc - Coordenada X do centro.
+     * @param {number} yc - Coordenada Y do centro.
+     * @param {number} x - Deslocamento X a partir do centro.
+     * @param {number} y - Deslocamento Y a partir do centro.
+     */
+    function plotEllipsePoints(xc, yc, x, y) {
+        fillGridCell(xc + x, yc + y, COR_BORDA);
+        fillGridCell(xc - x, yc + y, COR_BORDA);
+        fillGridCell(xc + x, yc - y, COR_BORDA);
+        fillGridCell(xc - x, yc - y, COR_BORDA);
+    }
+
+    /**
+     * @docs Algoritmo do Ponto Médio para desenhar uma elipse.
+     * @param {number} xc - Coordenada X do centro.
+     * @param {number} yc - Coordenada Y do centro.
+     * @param {number} rx - Raio no eixo X.
+     * @param {number} ry - Raio no eixo Y.
+     */
+    function midpointEllipse(xc, yc, rx, ry) {
+        const rx2 = rx * rx;
+        const ry2 = ry * ry;
+        const twoRx2 = 2 * rx2;
+        const twoRy2 = 2 * ry2;
+        let p;
+        let x = 0;
+        let y = ry;
+        let px = 0;
+        let py = twoRx2 * y;
+
+        plotEllipsePoints(xc, yc, x, y);
+
+        // Região 1: Onde a inclinação |dy/dx| < 1
+        p = Math.round(ry2 - (rx2 * ry) + (0.25 * rx2));
+        while (px < py) {
+            x++;
+            px += twoRy2;
+            if (p < 0) {
+                p += ry2 + px;
+            } else {
+                y--;
+                py -= twoRx2;
+                p += ry2 + px - py;
+            }
+            plotEllipsePoints(xc, yc, x, y);
+        }
+
+        // Região 2: Onde a inclinação |dy/dx| >= 1
+        p = Math.round(ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - rx2 * ry2);
+        while (y > 0) {
+            y--;
+            py -= twoRx2;
+            if (p > 0) {
+                p += rx2 - py;
+            } else {
+                x++;
+                px += twoRy2;
+                p += rx2 - py + px;
+            }
+            plotEllipsePoints(xc, yc, x, y);
+        }
+    }
+    // --- FIM DO CÓDIGO PARA ADICIONAR ---
+
     // --- FIM DA IMPLEMENTAÇÃO DOS ALGORITMOS ---
 
 
@@ -1060,6 +1166,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 setupCanvas();
                 renderCubeCabinet(rotXcabi, rotYcabi, angleCabi, vertexCabi, edgeCabi);
                 break;
+            case 'elipse':
+                const xc_elipse = parseInt(document.getElementById('xc').value);
+                const yc_elipse = parseInt(document.getElementById('yc').value);
+                const rx = parseInt(document.getElementById('rx').value);
+                const ry = parseInt(document.getElementById('ry').value);
+
+                if (!isNaN(xc_elipse) && !isNaN(yc_elipse) && !isNaN(rx) && !isNaN(ry)) {
+                    midpointEllipse(xc_elipse, yc_elipse, rx, ry);
+                } else {
+                    alert("Por favor, defina o centro e os raios da elipse.");
+                }
+                break;
             default:
                 console.log(`Botão 'Desenhar' clicado para o algoritmo: ${algorithm}`);
                 alert(`O algoritmo "${algorithm}" seria executado agora. A lógica de desenho ainda precisa ser implementada.`);
@@ -1081,7 +1199,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 grid_color[i][j] = 'white';
             }
         }
-        console.log("Tela limpa.");
+        // --- INÍCIO DA MODIFICAÇÃO ---
+    // Verifica se o algoritmo selecionado NÃO começa com a palavra "projecao"
+        if (!algorithmSelect.value.startsWith('projecao')) {
+            // Pega todos os elementos <input> dentro da área de parâmetros
+            const inputs = parametersArea.querySelectorAll('input');
+            
+            // Para cada input encontrado, define seu valor como vazio
+            inputs.forEach(input => {
+                if (input.type === 'checkbox') {
+                    input.checked = false; // Para checkboxes, desmarcamos
+                } else {
+                    input.value = ''; // Para outros inputs, limpamos o valor
+                }
+            });
+        }
+        
+        // Reseta a contagem de cliques para evitar erros ao iniciar um novo desenho
+        clickCount = 0; 
+        // --- FIM DA MODIFICAÇÃO ---
+
+        console.log("Tela limpa e campos resetados.");
     });
 
     // Event listener para mudança de algoritmo
